@@ -3,43 +3,54 @@ import ReactDOM from "react-dom";
 import './index.css';
 
 const Square = (props) => {
-  return (
-    <button
-      className="square"
-      onClick={() => props.onClick()}
-    >
-      {props.value}
-    </button>
-  );
+ return (
+   <button className="square"
+    onClick={props.onClick}
+   >
+     {props.value}
+   </button>
+ )
 }
 
 class Board extends React.Component {
+  // constructor(props) {
+  //   super(props);
 
-  handleClick(i) {
-    const turn = this.state.turn;
-    const squares = [...this.state.squares];
+  //   this.state = {
+  //     board: Array(9).fill(null),
+  //     turn: true,
+  //   }
+  // }
 
-    if(calculateWinner(squares) || squares[i]) 
-      return;
+  // handleClick(i) { 
+  //   const turn = this.state.turn;
+  //   let board = [...this.state.board];
 
-    squares[i] = turn ? 'X' : 'O';
-    this.setState({squares: squares, turn: !turn});
-  }
+  //   if (calculateWinner(board) || board[i])
+  //     return;
+
+  //   board[i] = turn? 'X': 'O';
+  //   this.setState({board: board, turn: !turn});
+  // }
 
   renderSquare(i) {
     return (
       <Square 
-        value={this.props.squares[i]}
+        value={this.props.board[i]} 
         onClick={() => this.props.onClick(i)}
-      />  
-    );
-  }
+      ></Square>
+    )
+  };
 
   render() {
+  //   const board = this.state.board;
+  //   const winner = calculateWinner(board);
+  //   const status = winner? 'Winner:' + winner: (this.state.turn? 'X': 'O') + '\'s turn.';
     
-
     return (
+      
       <div>
+        {/* <div>{status}</div> */}
         <div className="board-row">
           {this.renderSquare(0)}
           {this.renderSquare(1)}
@@ -65,34 +76,88 @@ class Game extends React.Component {
     super(props);
 
     this.state = {
-      history: [{
-        squares: Array(9).fill(null),
-      }],
-      turn: true,
+      history: [
+        {
+          board: Array(9).fill(null),
+        }
+      ],
+      step: 0,
     }
   }
 
-  
+  handleClick(i) {
+    // const step = this.state.step;
+    let history = [...this.state.history];
+    let board = [...history[history.length-1].board];
+    let turn = this.state.step%2===0;
+
+    if (calculateWinner(board) || board[i])
+      return;
+
+    board[i] = turn? 'X': 'O';
+
+    this.setState(
+      {
+        history: history.concat({board: board}),
+        turn: !turn,
+        step: history.length,
+      }
+    )
+  }
+
+  jumpTo(i) {
+    let history = [...this.state.history];
+    history = history.slice(0, i+1);
+    console.log(history[i].board)
+    let turn = i%2===0;
+    this.setState({
+      history: history,
+      turn: turn,
+    })
+  }
+
   render() {
 
     const history = this.state.history;
-    const current = history[history.length - 1];
+    const board = history[history.length-1].board;
+    
+    const winner = calculateWinner(board);
+    const endgame = this.state.step === 8;
+    let status = undefined;
+    if (winner) {
+      status = 'Winner is: ' + winner;
+    } 
+    else if (endgame) {
+      status = 'Tie';
+    }
+    else {
+      status = 'Turn: ' + (this.state.turn? 'X' : 'O');
+    }
 
-    const winner = calculateWinner(current.squares);
-    let status = winner? 'Winner: ' + winner : 'Next player: ' + (this.state.turn? 'X': 'O');
+
+    const moves = history.map((move, i) => {
+      const desc = i? 'Goto move #' + i: "Goto start";
+      return (
+        <li
+          key={i}
+        >
+          <button onClick={() => this.jumpTo(i)}>{desc}</button>
+        </li>
+      )
+    });
+
 
     return (
       <div className="game">
         <div className="game-board">
           <Board 
-            squares={this.state.history[this.state.history.length - 1].squares}
-            turn={this.state.turn}
-            // onClick={() => handleClick()}
+            board={board}
+            onClick={(i) => this.handleClick(i)}
           />
         </div>
         <div className="game-info">
           <div>{status}</div>
-          <ol>{/* TODO */}</ol>
+          <ol>{moves}</ol>
         </div>
       </div>
     );
